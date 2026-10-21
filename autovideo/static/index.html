@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AutoCreateVideo</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <div class="eyebrow">AUTO CREATE VIDEO</div>
+    <h1>Sản xuất video tự động</h1>
+    <p class="muted">Sản phẩm → Kịch bản (VideoScript) → Ảnh (Muse, nhiều lượt) → Video (Muse)</p>
+  </div>
+  <div class="top-actions">
+    <span id="runPill" class="pill">Chưa chạy</span>
+    <button id="btnDownloadAll" class="ghost" type="button" title="Tải mọi video đã xong của phiên này (file .zip)">⬇ Tải tất cả video</button>
+    <button id="btnRetry" class="ghost" type="button">↻ Chạy lại mục lỗi</button>
+    <button id="btnStop" class="danger" type="button">■ Dừng</button>
+    <button id="btnStart" class="primary" type="button">▶ Bắt đầu</button>
+  </div>
+</header>
+
+<main class="layout">
+  <aside class="side">
+    <section class="card">
+      <h2><span class="step">1</span>Chọn sản phẩm</h2>
+      <p class="muted small" id="productsDir"></p>
+      <div class="seg" role="radiogroup">
+        <label><input type="radio" name="mode" value="manual" checked> Chọn trực tiếp</label>
+        <label><input type="radio" name="mode" value="random"> Ngẫu nhiên</label>
+      </div>
+      <div id="randomBox" class="row hidden">
+        <label for="randomCount">Số sản phẩm ngẫu nhiên</label>
+        <input id="randomCount" type="number" min="1" value="2">
+      </div>
+      <div id="manualBox">
+        <div class="row-between">
+          <span class="small muted" id="selCount">0 đã chọn</span>
+          <span>
+            <button class="link" type="button" id="selAll">Chọn hết</button>
+            <button class="link" type="button" id="selNone">Bỏ chọn</button>
+            <button class="link" type="button" id="reloadProducts">Quét lại</button>
+          </span>
+        </div>
+        <div id="productGrid" class="product-grid"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2><span class="step">2</span>Tham số kịch bản (VideoScript)</h2>
+      <p class="small" id="vsStatus"></p>
+      <div class="form">
+        <label>VideoScript URL<input data-key="videoscript_url"></label>
+        <label>API key OpenCode<input data-key="vs_api_key" type="password" autocomplete="off" placeholder="để trống = giữ key đã lưu"></label>
+        <div class="two">
+          <label>Model<input data-key="vs_model"></label>
+          <label>Max output tokens<input data-key="vs_max_tokens" type="number" min="2000" max="64000" step="1000"></label>
+        </div>
+        <label>Base URL<input data-key="vs_base_url"></label>
+        <div class="two">
+          <label>Số kịch bản / sản phẩm<input data-key="vs_num_videos" type="number" min="1" max="10"></label>
+          <label>Số cảnh<input data-key="vs_num_scenes" type="number" min="2" max="12"></label>
+        </div>
+        <p class="small muted" id="imageHint"></p>
+        <label class="check"><input type="checkbox" data-key="skip_images"> Không tạo ảnh trước — Muse tạo video thẳng từ ảnh sản phẩm gốc</label>
+        <p class="small muted">Khi bật: bỏ qua bước tạo 6 ảnh, gửi ảnh sản phẩm gốc (file tên bắt đầu bằng <code>ref</code>/<code>main</code> được ưu tiên) + prompt video từng clip. Nhanh hơn, ít lượt hơn; không có ảnh khung đầu cho từng cảnh.</p>
+        <label>Cách tạo video Muse
+          <select data-key="vs_muse_mode">
+            <option value="block">Theo khối 10s — ít lượt tạo (15–20s: 2 lượt)</option>
+            <option value="shot">Mỗi cảnh 1 lượt — giữ sản phẩm sát ảnh nhất, tốn lượt hơn</option>
+          </select>
+        </label>
+        <label>Tối đa giây lấy từ mỗi clip Muse (3–10)<input data-key="vs_muse_clip_seconds" type="number" min="3" max="10"></label>
+        <p class="small muted" id="clipHint"></p>
+        <div class="two">
+          <label>Thời lượng (giây)<input data-key="vs_video_duration" type="number" min="5" max="60"></label>
+          <label>Tỉ lệ
+            <select data-key="vs_aspect_ratio"><option>9:16</option><option>16:9</option><option>1:1</option></select>
+          </label>
+        </div>
+        <div class="two">
+          <label>Ngôn ngữ prompt
+            <select data-key="vs_prompt_language"><option value="vi">Tiếng Việt</option><option value="en">English</option></select>
+          </label>
+          <label>Ảnh SP gửi VideoScript<input data-key="vs_max_product_images" type="number" min="1" max="10"></label>
+        </div>
+        <label>Bối cảnh<select data-key="vs_background_option" id="bgSelect"><option value="auto">Tự động</option></select></label>
+        <label>Bối cảnh tuỳ chỉnh<input data-key="vs_custom_background" placeholder="tuỳ chọn"></label>
+        <label class="check"><input type="checkbox" data-key="vs_packaging_enabled"> Thay bao bì bằng túi trong</label>
+        <label>Kiểu túi<select data-key="vs_packaging_shape" id="bagSelect"><option value="random">Ngẫu nhiên</option></select></label>
+        <label>Ghi chú thêm cho kịch bản<textarea data-key="vs_additional_prompt" rows="2"></textarea></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2><span class="step">3</span>Muse &amp; luồng chạy</h2>
+      <div class="form">
+        <div class="two">
+          <label>Số luồng Muse<input data-key="threads" type="number" min="1" max="20"></label>
+          <label>Luồng viết kịch bản<input data-key="script_concurrency" type="number" min="1" max="10"></label>
+        </div>
+        <label>Số lần thử lại khi Muse lỗi mạng / 502<input data-key="muse_retries" type="number" min="0" max="10"></label>
+      </div>
+      <div class="row-between"><strong class="small">Tài khoản Muse</strong>
+        <button class="link" type="button" id="reloadAccounts">Tải lại</button></div>
+      <div id="accountList" class="account-list"></div>
+      <div id="assignPreview" class="assign"></div>
+      <details class="advanced" open>
+        <summary>Giữ đúng sản phẩm &amp; cách dựng video</summary>
+        <div class="form">
+          <p class="small muted">Để trống = gửi nguyên prompt của kịch bản. Nội dung ở đây được thêm vào <b>sau</b> prompt.</p>
+          <label>Thêm sau prompt ảnh (lượt 1)<textarea data-key="image_suffix" rows="3"></textarea></label>
+          <button class="link" type="button" data-template="image_suffix">Dùng mẫu giữ đúng sản phẩm</button>
+          <label>Thêm sau prompt video <span class="muted">({count} {duration})</span><textarea data-key="video_suffix" rows="3"></textarea></label>
+          <button class="link" type="button" data-template="video_suffix">Dùng mẫu giữ đúng sản phẩm (video)</button>
+          <p class="small muted">Cách chia clip 10 giây và cắt ghép đã nằm sẵn trong prompt Muse của VideoScript — không cần thêm ở đây. Khi tạo video chỉ gửi các ảnh cảnh đã tạo.</p>
+        </div>
+      </details>
+      <details class="advanced">
+        <summary>Nâng cao</summary>
+        <div class="form">
+          <label>Thư mục products<input data-key="products_dir"></label>
+          <label>Thư mục tài khoản Muse<input data-key="muse_accounts_dir"></label>
+          <div class="two">
+            <label>Ảnh SP gửi Muse<input data-key="muse_max_input_images" type="number" min="1" max="8"></label>
+            <label>Số lượt ảnh tối đa<input data-key="max_image_rounds" type="number" min="1" max="10"></label>
+          </div>
+          <div class="two">
+            <label>Timeout 1 lượt ảnh (s)<input data-key="image_round_timeout" type="number" min="60"></label>
+            <label>Chờ yên lặng (s)<input data-key="image_idle_seconds" type="number" min="5"></label>
+          </div>
+          <div class="two">
+            <label>Timeout video (s)<input data-key="video_timeout" type="number" min="120"></label>
+            <label>Số lượt video tối đa<input data-key="video_attempts" type="number" min="1" max="6"></label>
+          </div>
+          <label>Chờ yên lặng khi làm video (s)<input data-key="video_idle_seconds" type="number" min="20"></label>
+          <label>Lời mở đầu prompt ảnh<textarea data-key="image_prefix" rows="3"></textarea></label>
+          <label>Tin nhắn làm tiếp ảnh <span class="muted">({missing_list} {have} {target} {missing})</span><textarea data-key="continue_message" rows="3"></textarea></label>
+          <label>Lời mở đầu prompt video <span class="muted">({count})</span><textarea data-key="video_prefix" rows="3"></textarea></label>
+          <label>Tin nhắn làm tiếp video <span class="muted">({duration})</span><textarea data-key="video_retry_message" rows="2"></textarea></label>
+        </div>
+      </details>
+      <p class="small muted" id="saveState"></p>
+    </section>
+  </aside>
+
+  <section class="board">
+    <div id="workers" class="workers"></div>
+    <div id="summary" class="summary"></div>
+    <div id="products" class="products"></div>
+    <p id="emptyBoard" class="empty">Chưa có phiên chạy. Chọn sản phẩm và bấm <strong>Bắt đầu</strong>.</p>
+  </section>
+</main>
+
+<div id="toast" class="toast hidden"></div>
+<script src="/app.js"></script>
+</body>
+</html>

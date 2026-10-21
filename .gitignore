@@ -1,0 +1,19 @@
+# Local settings (contains the OpenCode API key)
+settings.json
+
+# Generated data: run history and downloaded images / videos
+runs/
+output/
+
+# Product photos (local input data)
+products/*
+!products/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+
+# Logs / OS
+*.log
+.DS_Store
+Thumbs.db
